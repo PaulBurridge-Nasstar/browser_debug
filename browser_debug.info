@@ -1,0 +1,6 @@
+name = Browser Debug
+description = For debugging via the javascript console
+core = 7.x
+package = Other
+
+scripts[] = browser_debug.js

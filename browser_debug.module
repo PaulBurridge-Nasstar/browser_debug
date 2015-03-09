@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * Impliments hook_ajax_render_alter
+ *
+ * Add our own completion command to trigger client side actions
+ */
+function browser_debug_ajax_render_alter(&$commands) {
+  $commands[] = array('command' => 'browserDebugAjaxComplete', 'arguments' => _browser_debug_gather_data());
+}
+
+/**
+ * Impliments hook_js_alter
+ *
+ * Populate client side data in Drupal.settings
+ */
+function browser_debug_js_alter() {
+  drupal_add_js(array('browserDebug' => _browser_debug_gather_data()), 'setting');
+}
+
+function _browser_debug_gather_data() {
+  $session  = array();
+  $serialized_false = serialize(FALSE);
+  foreach ($_SESSION as $key => $value) {
+    $unserialized = unserialize($value);
+    if($unserialized === FALSE && $value !== $serialized_false) {
+      $session[$key] = $value;      
+    } else {
+      $session[$key] = $unserialized;
+    }
+  }
+  return array(
+    'session' => $session,
+    'log' => BrowserDebugLog::getLog(),
+  );  
+}
+
+function bd($item) {
+  BrowserDebugLog::addToLog($item, $name);
+}
+
+class BrowserDebugLog {
+  private static $log = array();
+
+  public static function getLog() {  
+    return self::$log;
+  }
+
+  public static function addToLog($item) {
+    self::$log[] = $item;
+  }
+}
+
+
