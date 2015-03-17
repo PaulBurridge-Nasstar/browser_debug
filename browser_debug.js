@@ -31,6 +31,13 @@ if (typeof console === "undefined") {
       }      
     }
 
+    if(data.watchdog.length > 0) {
+      console.log('Watchdog:');
+      for(var i = 0; i < data.watchdog.length; i++) {
+        console.log(data.watchdog[i].join(' : '));
+      }      
+    }
+
   }
 
 

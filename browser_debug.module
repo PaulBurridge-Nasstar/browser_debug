@@ -1,6 +1,15 @@
 <?php
 
 /**
+ * Impliments hook_boot
+ *
+ * Gather log postitions
+ */
+function browser_debug_boot() {
+  BrowserDebug::boot();
+}
+
+/**
  * Impliments hook_ajax_render_alter
  *
  * Add our own completion command to trigger client side actions
@@ -15,40 +24,106 @@ function browser_debug_ajax_render_alter(&$commands) {
  * Populate client side data in Drupal.settings
  */
 function browser_debug_js_alter() {
-  drupal_add_js(array('browserDebug' => _browser_debug_gather_data()), 'setting');
-}
-
-function _browser_debug_gather_data() {
-  $session  = array();
-  $serialized_false = serialize(FALSE);
-  foreach ($_SESSION as $key => $value) {
-    $unserialized = unserialize($value);
-    if($unserialized === FALSE && $value !== $serialized_false) {
-      $session[$key] = $value;      
-    } else {
-      $session[$key] = $unserialized;
-    }
-  }
-  return array(
-    'session' => $session,
-    'log' => BrowserDebugLog::getLog(),
-  );  
+  drupal_add_js(array('browserDebug' => BrowserDebug::getAllData()), 'setting');
 }
 
 function bd($item) {
-  BrowserDebugLog::addToLog($item, $name);
+  BrowserDebug::addToLog($item);
 }
 
-class BrowserDebugLog {
-  private static $log = array();
+class BrowserDebug {
 
-  public static function getLog() {  
-    return self::$log;
+  private static $log = array();
+  private static $watchdogBootPosition = 0;
+
+  public static function boot() {
+    self::$watchdogBootPosition = self::getWatchdogPosition();
+    self::addToLog('boot');
   }
 
   public static function addToLog($item) {
     self::$log[] = $item;
   }
+
+  public static function getAllData() {
+    self::addToLog('getAllData');
+
+    return array(
+      'session' => self::getSession(),
+      'watchdog' => self::getWatchdogLog(),
+      'log' => self::$log,
+    );
+  }
+
+  public static function getWatchdogPosition() {
+    $wid = (int) db_query('select max(wid) from watchdog;')->fetchField();
+    return $wid;
+  }
+
+  private static function getWatchdogLog() {
+    // return array();
+    $wid = self::getWatchdogPosition();
+    $last_wid = variable_get('browser_debug_last_watchdog_position', self::$watchdogBootPosition);
+    bd($wid);
+    bd($last_wid);
+    variable_set('browser_debug_last_watchdog_position', $wid);
+
+    $query = db_select('watchdog', 'w')->extend('PagerDefault')->extend('TableSort');
+    $query->leftJoin('users', 'u', 'w.uid = u.uid');
+    $query
+      ->fields('w', array('wid', 'uid', 'severity', 'type', 'timestamp', 'message', 'variables', 'link'))
+      ->addField('u', 'name');
+
+    $result = $query
+      ->condition('wid', array($last_wid, $wid), 'BETWEEN')
+      ->limit(500)
+      ->orderBy('wid', 'desc')
+      ->execute();
+
+    $rows = array();
+    foreach ($result as $dblog) {
+
+      $serialized_false = serialize(FALSE);
+      @$vars = unserialize($dblog->variables);
+      if (!isset($vars) || ($vars === FALSE && $value !== $serialized_false)) {
+        $message = strip_tags(decode_entities($dblog->message));
+      }
+      else {
+        $message = strip_tags(decode_entities(t($dblog->message, $vars)));
+      }
+
+      $rows[] = array(
+        format_date($dblog->timestamp, 'short'),
+        $dblog->type,
+        $message,
+        $dblog->name,
+      );
+    }
+
+    return $rows;
+  }
+
+  private function getSession() {
+    $session  = array();
+    $serialized_false = serialize(FALSE);
+    foreach ($_SESSION as $key => $value) {
+      @$unserialized = unserialize(is_string($value) ? $value : $serialized_false);
+      if ($unserialized === FALSE && $value !== $serialized_false) {
+        $session[$key] = $value;
+      }
+      else {
+        $session[$key] = $unserialized;
+      }
+    }
+    return $session;
+  }
+
+  private static function convertArrayToObject($array) {
+    $object = new stdClass();
+    foreach ($array as $key => $value) {
+      $object->$key = $value;
+    }
+    return $object;
+  }
+
 }
-
-
