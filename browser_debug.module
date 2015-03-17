@@ -15,7 +15,7 @@ function browser_debug_boot() {
  * Add our own completion command to trigger client side actions
  */
 function browser_debug_ajax_render_alter(&$commands) {
-  $commands[] = array('command' => 'browserDebugAjaxComplete', 'arguments' => _browser_debug_gather_data());
+  $commands[] = array('command' => 'browserDebugAjaxComplete', 'arguments' => BrowserDebug::getAllData());
 }
 
 /**
