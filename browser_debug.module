@@ -64,8 +64,8 @@ class BrowserDebug {
     // return array();
     $wid = self::getWatchdogPosition();
     $last_wid = variable_get('browser_debug_last_watchdog_position', self::$watchdogBootPosition);
-    bd($wid);
-    bd($last_wid);
+    // bd($wid);
+    // bd($last_wid);
     variable_set('browser_debug_last_watchdog_position', $wid);
 
     $query = db_select('watchdog', 'w')->extend('PagerDefault')->extend('TableSort');
@@ -92,15 +92,18 @@ class BrowserDebug {
         $message = strip_tags(decode_entities(t($dblog->message, $vars)));
       }
 
-      $rows[] = array(
+      $row = array(
         format_date($dblog->timestamp, 'short'),
         $dblog->type,
         $message,
         $dblog->name,
       );
+
+      $rows[] = implode(' : ', $row);
+
     }
 
-    return $rows;
+    return array('watchdog' => $rows);
   }
 
   private function getSession() {

@@ -23,21 +23,21 @@ if (typeof console === "undefined") {
   function printDebug(data) {    
     console.log('Session:');
     console.log(data.session);
-    
+    console.log(data.watchdog);
     if(data.log.length > 0) {
       console.log('Log:');
       for(var i = 0; i < data.log.length; i++) {
         console.log(data.log[i]);
       }      
     }
-
+    /*
     if(data.watchdog.length > 0) {
       console.log('Watchdog:');
       for(var i = 0; i < data.watchdog.length; i++) {
         console.log(data.watchdog[i].join(' : '));
       }      
     }
-
+    */
   }
 
 
