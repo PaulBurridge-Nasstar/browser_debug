@@ -1,4 +1,10 @@
 <?php
+/**
+ * @file
+ * Debugs session and logs to javascript console
+ * 
+ * drush php-eval "variable_set('browser_debug_settings', array('logs' => array('/var/log/ur/sop-ja.log' => 0, '/var/log/ur/portal.log' => 0)));"
+ */
 
 /**
  * Impliments hook_boot
@@ -35,10 +41,22 @@ class BrowserDebug {
 
   private static $log = array();
   private static $watchdogBootPosition = 0;
+  private static $settings;
+
+  private static function getSettings() {
+    $settings = variable_get('browser_debug_settings', array());
+    $settings = array_merge(array('watchdog' => 0, 'logs' => array()), $settings);
+    self::$settings = $settings;
+    // self::saveSettings();
+  }
+
+  private static function saveSettings() {
+    variable_set('browser_debug_settings', self::$settings);
+  }
 
   public static function boot() {
+    self::getSettings();
     self::$watchdogBootPosition = self::getWatchdogPosition();
-    self::addToLog('boot');
   }
 
   public static function addToLog($item) {
@@ -46,8 +64,6 @@ class BrowserDebug {
   }
 
   public static function getAllData() {
-    self::addToLog('getAllData');
-
     return array(
       'session' => self::getSession(),
       'watchdog' => self::getWatchdogLog(),
