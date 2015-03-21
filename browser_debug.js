@@ -23,23 +23,20 @@ if (typeof console === "undefined") {
   function printDebug(data) {    
     console.log('Session:');
     console.log(data.session);
-    console.log(data.watchdog);
+
+    $.each(data.logs, function(log, value) {
+      var o = {};
+      o[log] = value;
+      console.log(o);
+    });
+
     if(data.log.length > 0) {
       console.log('Log:');
       for(var i = 0; i < data.log.length; i++) {
         console.log(data.log[i]);
       }      
     }
-    /*
-    if(data.watchdog.length > 0) {
-      console.log('Watchdog:');
-      for(var i = 0; i < data.watchdog.length; i++) {
-        console.log(data.watchdog[i].join(' : '));
-      }      
-    }
-    */
   }
-
 
 })(jQuery);
 

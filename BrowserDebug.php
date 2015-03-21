@@ -9,6 +9,16 @@ class BrowserDebug {
     if ($settings['watchdog'] === 0) {
       $settings['watchdog'] = $this->getWatchdogPosition();
     }
+    foreach($this->settings['logs'] as $log => &$pos) {
+      $size = (int) filesize($log);
+      if($pos === 0) {
+        // No position in settings so start from current position.
+        $pos = $size;
+      } elseif ($pos > $size) {
+        // File may have been recreated or rotated.
+        $pos = 0;
+      }
+    }
   }
 
   private function getSettings() {
@@ -23,14 +33,12 @@ class BrowserDebug {
     $settings = array_replace_recursive($default, $settings);
     // Remove extra.
     $settings['logs'] = array_intersect_key($settings['logs'], $logs);
-    $this->log($settings['watchdog'], 'settings.watchdog (get)');
-    $this->log($settings['logs'], 'settings.logs (get)');
+    // $this->log(print_r($settings, TRUE), 'settings (get)');
     $this->settings = $settings;
   }
 
   private function saveSettings() {
-    $this->log($this->settings['watchdog'], 'settings.watchdog (set)');
-    $this->log($this->settings['logs'], 'settings.logs (set)');
+    // $this->log(print_r($this->settings, TRUE), 'settings (set)');
     variable_set('browser_debug_settings', $this->settings);
   }
 
@@ -40,13 +48,13 @@ class BrowserDebug {
         $this->log[] = $item;
         break;
 
-      case is_string($item):
-        $this->log[] = $label . ': ' . $item;
+      case is_array($item) || is_object($item):
+        $this->log[] = $label . ':';
+        $this->log[] = $item;
         break;
 
       default:
-        $this->log[] = $label . ':';
-        $this->log[] = $item;
+        $this->log[] = $label . ': ' . $item;
         break;
     }
   }
@@ -54,7 +62,7 @@ class BrowserDebug {
   public function getAllData() {
     $data = array(
       'session' => $this->getSession(),
-      'watchdog' => $this->getWatchdogLog(),
+      'logs' => array_merge($this->getWatchdogLog(), $this->getLogs()),
     );
     $this->saveSettings();
     // Add log, done as last step to enable internal logging until the last moment!
@@ -106,7 +114,6 @@ class BrowserDebug {
       $rows[] = implode(' : ', $row);
 
     }
-
     return array('watchdog' => $rows);
   }
 
@@ -123,6 +130,23 @@ class BrowserDebug {
       }
     }
     return $session;
+  }
+
+  private function getLogs() {
+    $return = array();
+    foreach($this->settings['logs'] as $log => &$pos) {
+      if(!file_exists($log)) {
+        $this->log('The file ' . $log . ' does not exist', 'Error');
+        continue;
+      }
+      $new_pos = filesize($log);
+      $contents = file_get_contents($log, false, null, $pos);
+      $array = explode("\n", $contents);
+      array_pop($array);
+      $return[basename($log)] = $array;
+      $pos = $new_pos;
+    }
+    return $return;
   }
 
   private function convertArrayToObject($array) {
