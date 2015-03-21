@@ -1,74 +1,105 @@
 <?php
 /**
  * @file
- * Debugs session and logs to javascript console
- * 
- * drush php-eval "variable_set('browser_debug_settings', array('logs' => array('/var/log/ur/sop-ja.log' => 0, '/var/log/ur/portal.log' => 0)));"
+ * Debugs session and logs to JavaScript console.
+ *
+ * To configure log files run the following command from root of Drupal site
+ * amending log file paths as appropriate:
+ * drush vset browser_debug_logs "/var/log/one.log,/var/log/two.log"
  */
 
 /**
- * Impliments hook_boot
+ * Implements hook_boot().
  *
- * Gather log postitions
+ * Gather log positions.
  */
 function browser_debug_boot() {
   BrowserDebug::boot();
 }
 
 /**
- * Impliments hook_ajax_render_alter
+ * Implements hook_ajax_render_alter().
  *
- * Add our own completion command to trigger client side actions
+ * Add our own completion command to trigger client side actions.
  */
 function browser_debug_ajax_render_alter(&$commands) {
   $commands[] = array('command' => 'browserDebugAjaxComplete', 'arguments' => BrowserDebug::getAllData());
 }
 
 /**
- * Impliments hook_js_alter
+ * Implements hook_js_alter().
  *
- * Populate client side data in Drupal.settings
+ * Populate client side data in Drupal.settings.
  */
 function browser_debug_js_alter() {
   drupal_add_js(array('browserDebug' => BrowserDebug::getAllData()), 'setting');
 }
 
-function bd($item) {
-  BrowserDebug::addToLog($item);
+function bd($item, $label = '') {
+  BrowserDebug::addToLog($item, $label);
 }
 
 class BrowserDebug {
 
   private static $log = array();
-  private static $watchdogBootPosition = 0;
   private static $settings;
 
   private static function getSettings() {
+    $logs = variable_get('browser_debug_logs', array());
+    $logs = explode(',', $logs);
+    // Make array of with log path as key and 0 as value;
+    $logs = array_combine($logs, array_pad(array(), count($logs), 0));
     $settings = variable_get('browser_debug_settings', array());
-    $settings = array_merge(array('watchdog' => 0, 'logs' => array()), $settings);
+    // Create default array structure.
+    $default = array('watchdog' => 0, 'logs' => $logs);
+    // Add missing.
+    $settings = array_replace_recursive($default, $settings);
+    // Remove extra.
+    $settings['logs'] = array_intersect_key($settings['logs'], $logs);
+    bd($settings['watchdog'], 'settings.watchdog (get)');
+    bd($settings['logs'], 'settings.logs (get)');
     self::$settings = $settings;
-    // self::saveSettings();
   }
 
   private static function saveSettings() {
+    bd(self::$settings['watchdog'], 'settings.watchdog (set)');
+    bd(self::$settings['logs'], 'settings.logs (set)');
     variable_set('browser_debug_settings', self::$settings);
   }
 
   public static function boot() {
     self::getSettings();
-    self::$watchdogBootPosition = self::getWatchdogPosition();
+    if($settings['watchdog'] === 0) {
+      $settings['watchdog'] = self::getWatchdogPosition();
+    }
   }
 
-  public static function addToLog($item) {
-    self::$log[] = $item;
+  public static function addToLog($item, $label) {
+    switch (TRUE) {
+      case empty($label):
+        self::$log[] = $item;
+        break;
+
+      case is_string($item):
+        self::$log[] = $label . ': ' . $item;
+        break;
+
+      default:
+        self::$log[] = $label . ':';
+        self::$log[] = $item;
+        break;
+    }
   }
 
   public static function getAllData() {
-    return array(
+    $data = array(
       'session' => self::getSession(),
       'watchdog' => self::getWatchdogLog(),
-      'log' => self::$log,
     );
+    self::saveSettings();
+    // Add log, done as last step to enable internal logging until the last moment!
+    $data['log'] = self::$log;
+    return $data;
   }
 
   public static function getWatchdogPosition() {
@@ -77,12 +108,9 @@ class BrowserDebug {
   }
 
   private static function getWatchdogLog() {
-    // return array();
     $wid = self::getWatchdogPosition();
-    $last_wid = variable_get('browser_debug_last_watchdog_position', self::$watchdogBootPosition);
-    // bd($wid);
-    // bd($last_wid);
-    variable_set('browser_debug_last_watchdog_position', $wid);
+    $last_wid = self::$settings['watchdog'];
+    self::$settings['watchdog'] = $wid;
 
     $query = db_select('watchdog', 'w')->extend('PagerDefault')->extend('TableSort');
     $query->leftJoin('users', 'u', 'w.uid = u.uid');
