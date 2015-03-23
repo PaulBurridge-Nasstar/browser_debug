@@ -137,10 +137,19 @@ class BrowserDebug {
     foreach($this->settings['logs'] as $log => &$pos) {
       if(!file_exists($log)) {
         $this->log('The file ' . $log . ' does not exist', 'Error');
+        $return[basename($log)] = array();
         continue;
       }
       $new_pos = filesize($log);
-      $contents = file_get_contents($log, false, null, $pos);
+      if($new_pos <= $pos) {
+        $return[basename($log)] = array();
+        continue;        
+      }
+      $contents = file_get_contents($log, false, null, $pos, $new_pos - $pos);
+      if($log === '/tmp/drupal_debug.txt') { 
+        $this->log(strlen($contents), 'lenc');
+        $this->log($new_pos - $pos);
+      }
       $array = explode("\n", $contents);
       array_pop($array);
       $return[basename($log)] = $array;
