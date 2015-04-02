@@ -6,8 +6,8 @@ class BrowserDebug {
 
   public function __construct() {
     $this->getSettings();
-    if ($settings['watchdog'] === 0) {
-      $settings['watchdog'] = $this->getWatchdogPosition();
+    if ($this->settings['watchdog'] === 0) {
+      $this->settings['watchdog'] = $this->getWatchdogPosition();
     }
     foreach($this->settings['logs'] as $log => &$pos) {
       $size = (int) filesize($log);
@@ -22,7 +22,7 @@ class BrowserDebug {
   }
 
   private function getSettings() {
-    $logs = variable_get('browser_debug_logs', array());
+    $logs = variable_get('browser_debug_logs', '');
     $logs = explode(',', $logs);
     // Make array of with log path as key and 0 as value;
     $logs = array_combine($logs, array_pad(array(), count($logs), 0));
@@ -71,7 +71,8 @@ class BrowserDebug {
   }
 
   public function getWatchdogPosition() {
-    $wid = (int) db_query('select max(wid) from watchdog;')->fetchField();
+    $result = db_query('select max(wid) from watchdog;');
+    $wid = (int) db_result($result); 
     return $wid;
   }
 
@@ -164,6 +165,19 @@ class BrowserDebug {
       $object->key = $value;
     }
     return $object;
+  }
+
+}
+
+
+class BrowserDebugFactory {
+  
+  public static function getBrowserDebug() {
+    static $browser_debug;
+    if(!isset($browser_debug)) {
+      $browser_debug = new BrowserDebug();
+    }
+    return $browser_debug;
   }
 
 }

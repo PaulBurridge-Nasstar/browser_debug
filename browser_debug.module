@@ -14,8 +14,9 @@
  * Gather log positions.
  */
 function browser_debug_boot() {
+  // var_dump('-boot-');
   require_once 'BrowserDebug.php';
-  $browser_debug = &drupal_static('browser_debug');
+  $browser_debug = BrowserDebugFactory::getBrowserDebug();
   if (!isset($browser_debug)) {
     $browser_debug = new BrowserDebug();
   }
@@ -27,7 +28,8 @@ function browser_debug_boot() {
  * Add our own completion command to trigger client side actions.
  */
 function browser_debug_ajax_render_alter(&$commands) {
-  $browser_debug = &drupal_static('browser_debug');
+  // var_dump('-ajax-');
+  $browser_debug = BrowserDebugFactory::getBrowserDebug();
   $commands[] = array('command' => 'browserDebugAjaxComplete', 'arguments' => $browser_debug->getAllData());
 }
 
@@ -36,8 +38,9 @@ function browser_debug_ajax_render_alter(&$commands) {
  *
  * Populate client side data in Drupal.settings.
  */
-function browser_debug_js_alter() {
-  $browser_debug = &drupal_static('browser_debug');
+function browser_debug_page_build() {
+  // var_dump('-build-');
+  $browser_debug = BrowserDebugFactory::getBrowserDebug();
   drupal_add_js(array('browserDebug' => $browser_debug->getAllData()), 'setting');
 }
 
@@ -50,6 +53,6 @@ function browser_debug_js_alter() {
  *   Label to display next to item.
  */
 function bd($item, $label = '') {
-  $browser_debug = &drupal_static('browser_debug');
+  $browser_debug = BrowserDebugFactory::getBrowserDebug();
   $browser_debug->log($item, $label);
 }

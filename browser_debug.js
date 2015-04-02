@@ -22,7 +22,7 @@ if (typeof console === "undefined") {
 
   function printDebug(data) {    
     console.log('Session:');
-    console.log(data.session);
+    // console.log(data.session);
 
     $.each(data.logs, function(log, value) {
       var o = {};
@@ -37,6 +37,9 @@ if (typeof console === "undefined") {
       }      
     }
   }
+
+
+
 
 })(jQuery);
 
