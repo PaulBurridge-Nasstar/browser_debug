@@ -1,4 +1,5 @@
 <?php
+
 class BrowserDebug {
 
   private $log = array();
@@ -9,12 +10,13 @@ class BrowserDebug {
     if ($settings['watchdog'] === 0) {
       $settings['watchdog'] = $this->getWatchdogPosition();
     }
-    foreach($this->settings['logs'] as $log => &$pos) {
+    foreach ($this->settings['logs'] as $log => &$pos) {
       $size = (int) filesize($log);
-      if($pos === 0) {
+      if ($pos === 0) {
         // No position in settings so start from current position.
         $pos = $size;
-      } elseif ($pos > $size) {
+      }
+      elseif ($pos > $size) {
         // File may have been recreated or rotated.
         $pos = 0;
       }
@@ -22,8 +24,13 @@ class BrowserDebug {
   }
 
   private function getSettings() {
-    $logs = variable_get('browser_debug_logs', array());
-    $logs = explode(',', $logs);
+    $logs = variable_get('browser_debug_logs', '');
+    if (empty($logs)) {
+      $logs = array();
+    }
+    else {
+      $logs = explode(',', $logs);
+    }
     // Make array of with log path as key and 0 as value;
     $logs = array_combine($logs, array_pad(array(), count($logs), 0));
     $settings = variable_get('browser_debug_settings', array());
@@ -63,6 +70,7 @@ class BrowserDebug {
     $data = array(
       'session' => $this->getSession(),
       'logs' => array_merge($this->getWatchdogLog(), $this->getLogs()),
+      'html' => file_get_contents(drupal_get_path('module', 'browser_debug') . '/browser_debug.html'),
     );
     $this->saveSettings();
     // Add log, done as last step to enable internal logging until the last moment!
@@ -134,22 +142,18 @@ class BrowserDebug {
 
   private function getLogs() {
     $return = array();
-    foreach($this->settings['logs'] as $log => &$pos) {
-      if(!file_exists($log)) {
+    foreach ($this->settings['logs'] as $log => &$pos) {
+      if (!file_exists($log)) {
         $this->log('The file ' . $log . ' does not exist', 'Error');
         $return[basename($log)] = array();
         continue;
       }
       $new_pos = filesize($log);
-      if($new_pos <= $pos) {
+      if ($new_pos <= $pos) {
         $return[basename($log)] = array();
-        continue;        
+        continue;
       }
-      $contents = file_get_contents($log, false, null, $pos, $new_pos - $pos);
-      if($log === '/tmp/drupal_debug.txt') { 
-        $this->log(strlen($contents), 'lenc');
-        $this->log($new_pos - $pos);
-      }
+      $contents = file_get_contents($log, FALSE, NULL, $pos, $new_pos - $pos);
       $array = explode("\n", $contents);
       array_pop($array);
       $return[basename($log)] = $array;

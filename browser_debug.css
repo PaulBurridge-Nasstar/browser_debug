@@ -1,0 +1,67 @@
+#browser_debug {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+#browser_debug_inner {
+  position: relative;
+}
+
+#browser_debug,
+#browser_debug a,
+#browser_debug pre {
+  font-family: Menlo, Consolas, 'Andale Mono', 'Lucida Console', 'Nimbus Mono L', 'DejaVu Sans Mono', monospace, 'Courier New' !important;
+  font-size: 14px !important;
+}
+
+#browser_debug pre {
+  padding: 0 20px !important;
+  line-height: 1.2 !important;
+}
+
+#browser_debug .browser-debug-panel {
+  position: absolute !important;
+  padding: 5px 0 !important;
+  background-color: #18171b !important;
+  color: #56db3a !important;
+  overflow: auto !important;
+  -webkit-transition: top 0.8s ease !important;
+  -moz-transition: top 0.8s ease !important;
+  transition: top 0.8s ease !important;
+  z-index: 9997 !important;
+  width: 100% !important;
+}
+
+#browser_debug .browser-debug-panel-visible {
+  z-index: 9998 !important;
+}
+
+#browser_debug_panel_dump pre {
+  margin: 0 !important;
+}
+
+#browser_debug_toolbar {
+  position: absolute !important;
+  bottom: 0 !important;
+  border-top: 1px solid #000 !important;
+  background-color: #444 !important;
+  padding: 12px !important;
+  z-index: 9999 !important;
+  width: 100% !important;
+}
+
+#browser_debug_toolbar a {
+  padding: 5px 10px !important;
+  margin-right: 5px !important;
+  background-color: #777 !important;
+  color: #eee !important;
+  text-align: center !important;
+  font-size: 16px !important;
+  text-decoration: none !important;
+}
+
+pre.sf-dump {
+  display: none;
+  z-index: 9990 !important;
+}

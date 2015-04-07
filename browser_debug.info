@@ -4,4 +4,6 @@ core = 7.x
 package = Other
 
 scripts[] = browser_debug.js
+stylesheets[all][] = cleanslate.css
+stylesheets[all][] = browser_debug.css
 files[] = BrowserDebug.php

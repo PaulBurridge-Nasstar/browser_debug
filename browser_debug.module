@@ -8,6 +8,8 @@
  * drush vset browser_debug_logs "/var/log/one.log,/var/log/two.log"
  */
 
+require_once '/usr/local/include/composer/vendor/autoload.php';
+
 /**
  * Implements hook_boot().
  *
@@ -38,7 +40,9 @@ function browser_debug_ajax_render_alter(&$commands) {
  */
 function browser_debug_js_alter() {
   $browser_debug = &drupal_static('browser_debug');
-  drupal_add_js(array('browserDebug' => $browser_debug->getAllData()), 'setting');
+  $data = $browser_debug->getAllData();
+  drupal_add_js(array('browserDebug' => $data), 'setting');
+  dump($_SESSION);
 }
 
 /**
