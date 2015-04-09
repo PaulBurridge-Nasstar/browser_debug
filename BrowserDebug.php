@@ -1,14 +1,41 @@
 <?php
+/**
+ * @file
+ * Browser Debug Class.
+ *
+ * @todo
+ * Add hover display option.
+ * @todo
+ * Cater for truncated watchdog table.
+ * @todo
+ * Add ajax repsonses to panels.
+ * @todo
+ * Installer script?
+ * @todo
+ * Seperate session?
+ */
+
+use Symfony\Component\VarDumper\Cloner\VarCloner;
+use Symfony\Component\VarDumper\Dumper\HtmlDumper;
 
 class BrowserDebug {
 
-  private $log = array();
   private $settings;
+  private $stream;
+  private $cloner;
+  private $dumper;
 
   public function __construct() {
+    $this->stream = fopen('php://memory', 'r+');
+    $this->cloner = new VarCloner();
+    $this->dumper = new HtmlDumper($this->stream);
     $this->getSettings();
-    if ($settings['watchdog'] === 0) {
-      $settings['watchdog'] = $this->getWatchdogPosition();
+    $this->updateLogPositions();
+  }
+
+  private function updateLogPositions() {
+    if ($this->settings['watchdog'] === 0) {
+      $this->settings['watchdog'] = $this->getWatchdogPosition();
     }
     foreach ($this->settings['logs'] as $log => &$pos) {
       $size = (int) filesize($log);
@@ -23,6 +50,17 @@ class BrowserDebug {
     }
   }
 
+  public function dump($var) {
+    $that = $this;
+    $this->dumper->dump($this->cloner->cloneVar($var));
+  }
+
+  private function getDump() {
+    rewind($this->stream);
+    $s = stream_get_contents($this->stream);
+    return $s;
+  }
+
   private function getSettings() {
     $logs = variable_get('browser_debug_logs', '');
     if (empty($logs)) {
@@ -30,9 +68,9 @@ class BrowserDebug {
     }
     else {
       $logs = explode(',', $logs);
+      $logs = array_combine($logs, array_pad(array(), count($logs), 0));
     }
     // Make array of with log path as key and 0 as value;
-    $logs = array_combine($logs, array_pad(array(), count($logs), 0));
     $settings = variable_get('browser_debug_settings', array());
     // Create default array structure.
     $default = array('watchdog' => 0, 'logs' => $logs);
@@ -67,14 +105,18 @@ class BrowserDebug {
   }
 
   public function getAllData() {
-    $data = array(
+    $this->dump(array(
       'session' => $this->getSession(),
+      'cookie' => $_COOKIE,
+      'server' => $_SERVER,
+    ));
+    $data = array(
       'logs' => array_merge($this->getWatchdogLog(), $this->getLogs()),
       'html' => file_get_contents(drupal_get_path('module', 'browser_debug') . '/browser_debug.html'),
     );
     $this->saveSettings();
     // Add log, done as last step to enable internal logging until the last moment!
-    $data['log'] = $this->log;
+    $data['dump'] = $this->getDump();
     return $data;
   }
 
@@ -126,6 +168,9 @@ class BrowserDebug {
   }
 
   private function getSession() {
+    if (!isset($_SESSION)) {
+      return array();
+    }
     $session  = array();
     $serialized_false = serialize(FALSE);
     foreach ($_SESSION as $key => $value) {

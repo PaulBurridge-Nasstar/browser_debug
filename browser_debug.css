@@ -46,19 +46,30 @@
   bottom: 0 !important;
   border-top: 1px solid #000 !important;
   background-color: #444 !important;
-  padding: 12px !important;
+  padding: 10px !important;
   z-index: 9999 !important;
   width: 100% !important;
 }
 
 #browser_debug_toolbar a {
-  padding: 5px 10px !important;
+  padding: 2px 5px !important;
   margin-right: 5px !important;
   background-color: #777 !important;
   color: #eee !important;
   text-align: center !important;
   font-size: 16px !important;
   text-decoration: none !important;
+  border-radius: 3px !important;
+  -webkit-border-radius: 3px !important;
+  -moz-border-radius: 3px !important;
+  -o-border-radius: 3px !important;
+}
+
+#browser_debug_toolbar a:hover {
+  opacity: 0.8 !important;
+  -webkit-opacity: 0.8 !important;
+  -moz-opacity: 0.8 !important;
+  filter:alpha(opacity=50) !important;
 }
 
 pre.sf-dump {

@@ -8,7 +8,7 @@
  * drush vset browser_debug_logs "/var/log/one.log,/var/log/two.log"
  */
 
-require_once '/usr/local/include/composer/vendor/autoload.php';
+include_once '/usr/local/include/composer/vendor/autoload.php';
 
 /**
  * Implements hook_boot().
@@ -39,21 +39,27 @@ function browser_debug_ajax_render_alter(&$commands) {
  * Populate client side data in Drupal.settings.
  */
 function browser_debug_js_alter() {
-  $browser_debug = &drupal_static('browser_debug');
-  $data = $browser_debug->getAllData();
-  drupal_add_js(array('browserDebug' => $data), 'setting');
-  dump($_SESSION);
+  static $done = FALSE;
+  if(!$done) {
+    if(current_path() !== 'system/ajax') {
+      $done = TRUE;
+      $browser_debug = &drupal_static('browser_debug');
+      $data = $browser_debug->getAllData();
+      drupal_add_js(array('browserDebug' => $data), 'setting');
+    } 
+  }
 }
 
 /**
- * Logs to javascript console.
+ * Dump a variable.
  *
- * @param mixed $item
- *   Item to log.
- * @param string $label
- *   Label to display next to item.
+ * @param mixed $var
+ *   Variable to dump.
  */
-function bd($item, $label = '') {
+function d($var) {
   $browser_debug = &drupal_static('browser_debug');
-  $browser_debug->log($item, $label);
+  $browser_debug->dump($var);
 }
+
+
+
