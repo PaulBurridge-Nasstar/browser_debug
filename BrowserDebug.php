@@ -4,6 +4,8 @@
  * Browser Debug Class.
  *
  * @todo
+ * Fox dump expansion issue (inner div?).
+ * @todo
  * Add hover display option.
  * @todo
  * Cater for truncated watchdog table.

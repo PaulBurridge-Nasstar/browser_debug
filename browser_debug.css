@@ -31,6 +31,7 @@
   transition: top 0.8s ease !important;
   z-index: 9997 !important;
   width: 100% !important;
+  border-bottom: 9999px solid #18171b;
 }
 
 #browser_debug .browser-debug-panel-visible {

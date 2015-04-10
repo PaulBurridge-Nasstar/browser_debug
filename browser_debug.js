@@ -48,7 +48,7 @@ if (typeof console === "undefined") {
     var toolbarHeight = $browser_debug_toolbar.outerHeight();
     
     // Add defaults and tab index's (required for focus).
-    var panelMaxHeight = Math.floor($(window).height() - 80);
+    var panelMaxHeight = Math.floor($(window).height() - 40 - toolbarHeight);
     $browser_debug.find('.browser-debug-panel').attr('tabindex', 1).css('max-height', panelMaxHeight + 'px').css('top', '0');
 
     // Wire up buttons.
@@ -59,14 +59,19 @@ if (typeof console === "undefined") {
       $browser_debug.find('.browser-debug-panel-visible').removeClass('browser-debug-panel-visible').css('top', '0');
       if(!wasVisible) {
         // Show panel.
-        $element.addClass('browser-debug-panel-visible').css('top', '-' + ($element.outerHeight() + toolbarHeight)  + 'px').focus();
+        $element.addClass('browser-debug-panel-visible').css('top', '-' + ($element.innerHeight() + toolbarHeight)  + 'px').focus();
       }
     });
 
     // Wire up dump toggling.
     $dump.find('.sf-dump-toggle').click(function() {
       setTimeout(function() { 
-        $dump.css('top', '-' + ($dump.outerHeight() + toolbarHeight)  + 'px');
+        var top = -($dump.innerHeight() + toolbarHeight);
+        console.log($dump.position().top);
+        console.log(top);
+        if(top < $dump.position().top) {
+          $dump.css('top', top  + 'px');
+        }
       }, 0);
     });
 
