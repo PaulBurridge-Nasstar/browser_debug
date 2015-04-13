@@ -4,22 +4,15 @@
  * Browser Debug Class.
  *
  * @todo
- * Fox dump expansion issue (inner div?).
- * @todo
- * Add hover display option.
- * @todo
  * Cater for truncated watchdog table.
- * @todo
- * Add ajax repsonses to panels.
- * @todo
- * Installer script?
- * @todo
- * Seperate session?
  */
 
 use Symfony\Component\VarDumper\Cloner\VarCloner;
 use Symfony\Component\VarDumper\Dumper\HtmlDumper;
 
+/**
+ * Browser Debug Class.
+ */
 class BrowserDebug {
 
   private $settings;
@@ -27,6 +20,9 @@ class BrowserDebug {
   private $cloner;
   private $dumper;
 
+  /**
+   * Object constructor.
+   */
   public function __construct() {
     $this->stream = fopen('php://memory', 'r+');
     $this->cloner = new VarCloner();
@@ -35,6 +31,9 @@ class BrowserDebug {
     $this->updateLogPositions();
   }
 
+  /**
+   * Update log positions.
+   */
   private function updateLogPositions() {
     if ($this->settings['watchdog'] === 0) {
       $this->settings['watchdog'] = $this->getWatchdogPosition();
@@ -52,17 +51,36 @@ class BrowserDebug {
     }
   }
 
-  public function dump($var) {
-    $that = $this;
+  /**
+   * Dump variable.
+   *
+   * @param mixed $var
+   *   Variable to dump.
+   * @param string $label
+   *   Optional label.
+   */
+  public function dump($var, $label = '') {
+    if (!empty($label)) {
+      $var = array($label => $var);
+    }
     $this->dumper->dump($this->cloner->cloneVar($var));
   }
 
+  /**
+   * Get dump from stream.
+   *
+   * @return string
+   *   HTML created by dumper.
+   */
   private function getDump() {
     rewind($this->stream);
     $s = stream_get_contents($this->stream);
     return $s;
   }
 
+  /**
+   * Get settings from Drupal variable and update as necessary.
+   */
   private function getSettings() {
     $logs = variable_get('browser_debug_logs', '');
     if (empty($logs)) {
@@ -84,49 +102,55 @@ class BrowserDebug {
     $this->settings = $settings;
   }
 
+  /**
+   * Save settings to Drupal variable.
+   */
   private function saveSettings() {
     // $this->log(print_r($this->settings, TRUE), 'settings (set)');
     variable_set('browser_debug_settings', $this->settings);
   }
 
-  public function log($item, $label) {
-    switch (TRUE) {
-      case empty($label):
-        $this->log[] = $item;
-        break;
-
-      case is_array($item) || is_object($item):
-        $this->log[] = $label . ':';
-        $this->log[] = $item;
-        break;
-
-      default:
-        $this->log[] = $label . ': ' . $item;
-        break;
-    }
-  }
-
+  /**
+   * Get all data.
+   *
+   * @return array
+   *   Array containg all data gathered.
+   */
   public function getAllData() {
     $this->dump(array(
       'session' => $this->getSession(),
       'cookie' => $_COOKIE,
       'server' => $_SERVER,
+      'request' => $_REQUEST,
     ));
     $data = array(
       'logs' => array_merge($this->getWatchdogLog(), $this->getLogs()),
       'html' => file_get_contents(drupal_get_path('module', 'browser_debug') . '/browser_debug.html'),
     );
     $this->saveSettings();
-    // Add log, done as last step to enable internal logging until the last moment!
+    // Add log, done as last step to enable internal logging until the last
+    // moment.
     $data['dump'] = $this->getDump();
     return $data;
   }
 
+  /**
+   * Get Watchdog log position.
+   *
+   * @return int
+   *   The last watchdog log id.
+   */
   public function getWatchdogPosition() {
     $wid = (int) db_query('select max(wid) from watchdog;')->fetchField();
     return $wid;
   }
 
+  /**
+   * Get Watchdog log.
+   *
+   * @return array
+   *   Formated Watchdog log entries.
+   */
   private function getWatchdogLog() {
     $wid = $this->getWatchdogPosition();
     $last_wid = $this->settings['watchdog'];
@@ -135,7 +159,15 @@ class BrowserDebug {
     $query = db_select('watchdog', 'w')->extend('PagerDefault')->extend('TableSort');
     $query->leftJoin('users', 'u', 'w.uid = u.uid');
     $query
-      ->fields('w', array('wid', 'uid', 'severity', 'type', 'timestamp', 'message', 'variables', 'link'))
+      ->fields('w', array(
+       'wid',
+       'uid',
+       'severity',
+       'type',
+       'timestamp',
+       'message',
+       'variables',
+       'link'))
       ->addField('u', 'name');
 
     $result = $query
@@ -157,7 +189,7 @@ class BrowserDebug {
       }
 
       $row = array(
-        format_date($dblog->timestamp, 'short'),
+        date('Y-m-d H:i:s', $dblog->timestamp),
         $dblog->type,
         $message,
         $dblog->name,
@@ -169,6 +201,12 @@ class BrowserDebug {
     return array('watchdog' => $rows);
   }
 
+  /**
+   * Get session.
+   *
+   * @return array
+   *   Formatted session object with any serialized data serialized.
+   */
   private function getSession() {
     if (!isset($_SESSION)) {
       return array();
@@ -187,6 +225,12 @@ class BrowserDebug {
     return $session;
   }
 
+  /**
+   * Get Logs.
+   *
+   * @return array
+   *   Array containing all log file entries.
+   */
   private function getLogs() {
     $return = array();
     foreach ($this->settings['logs'] as $log => &$pos) {
@@ -207,14 +251,6 @@ class BrowserDebug {
       $pos = $new_pos;
     }
     return $return;
-  }
-
-  private function convertArrayToObject($array) {
-    $object = new stdClass();
-    foreach ($array as $key => $value) {
-      $object->key = $value;
-    }
-    return $object;
   }
 
 }

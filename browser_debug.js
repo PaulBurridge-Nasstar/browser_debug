@@ -11,7 +11,10 @@ if (typeof console === "undefined") {
 
     if(Drupal.ajax) {
       Drupal.ajax.prototype.commands.browserDebugAjaxComplete =  function(ajax, response, status) {
-        console.log('browserDebugAjaxComplete');
+        console.log('Bang');
+        console.log(response.arguments);
+        populateDumps(response.arguments.dump);
+        populateLogs(response.arguments.logs);
       };      
     }
 
@@ -21,30 +24,10 @@ if (typeof console === "undefined") {
     $('body').append(Drupal.settings.browserDebug.html);
     var $browser_debug = $('#browser_debug');
     var $browser_debug_toolbar = $('#browser_debug_toolbar');
-    var $browser_debug_panel = $('#browser_debug_panel');
-    var $browser_debug_button = $('#browser_debug_button');
     
-    // Populate dumps.
-    var $dump = $('#browser_debug_panel_dump').html(Drupal.settings.browserDebug.dump);
-    
-    // Create panels and buttons for logs and populate panels.
-    $.each(data.logs, function (logName, logData) {
-      var safeLogName = logName.replace(/\W/g, '_');
-      // Panel.
-      var $newPanel = $browser_debug_panel.clone();
-      $newPanel.attr('id', $browser_debug_panel.attr('id') + '_' + safeLogName);
-      $browser_debug.prepend($newPanel);
-      // Panel contents.
-      $.each(logData, function(index, text) {
-        $newPanel.append($('<pre></pre>').text(text));
-      });
-      // Button.
-      var $newButton = $browser_debug_button.clone();
-      $newButton.attr('id', $browser_debug_button.attr('id') + '_' + safeLogName).text(logName);
-      $browser_debug_toolbar.append($newButton);
-    });
-    $browser_debug_panel.remove();
-    $browser_debug_button.remove();
+    populateDumps(data.dump);
+    populateLogs(data.logs);
+
     var toolbarHeight = $browser_debug_toolbar.outerHeight();
     
     // Add defaults and tab index's (required for focus).
@@ -61,18 +44,7 @@ if (typeof console === "undefined") {
         // Show panel.
         $element.addClass('browser-debug-panel-visible').css('top', '-' + ($element.innerHeight() + toolbarHeight)  + 'px').focus();
       }
-    });
-
-    // Wire up dump toggling.
-    $dump.find('.sf-dump-toggle').click(function() {
-      setTimeout(function() { 
-        var top = -($dump.innerHeight() + toolbarHeight);
-        console.log($dump.position().top);
-        console.log(top);
-        if(top < $dump.position().top) {
-          $dump.css('top', top  + 'px');
-        }
-      }, 0);
+      return false;
     });
 
     // Check for mouse clicks outside of browser debug area.
@@ -83,7 +55,55 @@ if (typeof console === "undefined") {
       }
     });
 
+    function populateDumps(dump) {
+      var $dump = $('#browser_debug_panel_dump').append(dump);
+      // Wire up dump toggling.
+      $dump.find('.sf-dump-toggle').click(function() {
+        setTimeout(function() { 
+          var top = -($dump.innerHeight() + toolbarHeight);
+          if(top < $dump.position().top) {
+            $dump.css('top', top  + 'px');
+          }
+        }, 0);
+      });
+    }
+
+    function populateLogs(logs) {
+      var $browser_debug_panel = $('#browser_debug_panel');
+      var $browser_debug_button = $('#browser_debug_button');
+      
+      // Create panels and buttons for logs and populate panels.
+      $.each(logs, function (logName, logData) {
+        var safeLogName = logName.replace(/\W/g, '_');
+        // Panel.
+        var $panel = $('#browser_debug_panel_' + safeLogName);
+        if($panel.length === 0) {
+          // Create panel
+          $panel = $browser_debug_panel.clone();
+          $panel.attr('id', 'browser_debug_panel_' + safeLogName);
+          $browser_debug.prepend($panel);
+        }
+        // Panel contents.
+        $.each(logData, function(index, text) {
+          $panel.append($('<pre></pre>').text(text));
+        });
+        // Button.
+        if($('#browser_debug_button_' + safeLogName).length === 0) {
+          var $button = $browser_debug_button.clone();
+          $button.attr('id', 'browser_debug_button_' + safeLogName).text(logName);
+          $browser_debug_toolbar.append($button);
+        }
+      });
+      
+      $browser_debug_panel.remove();
+      $browser_debug_button.remove();
+    }
+
+
   });
+
+
+
 
 })(jQuery);
 

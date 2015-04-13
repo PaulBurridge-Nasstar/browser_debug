@@ -40,13 +40,13 @@ function browser_debug_ajax_render_alter(&$commands) {
  */
 function browser_debug_js_alter() {
   static $done = FALSE;
-  if(!$done) {
-    if(current_path() !== 'system/ajax') {
+  if (!$done) {
+    if (current_path() !== 'system/ajax') {
       $done = TRUE;
       $browser_debug = &drupal_static('browser_debug');
       $data = $browser_debug->getAllData();
       drupal_add_js(array('browserDebug' => $data), 'setting');
-    } 
+    }
   }
 }
 
@@ -56,10 +56,7 @@ function browser_debug_js_alter() {
  * @param mixed $var
  *   Variable to dump.
  */
-function d($var) {
+function d($var, $label = '') {
   $browser_debug = &drupal_static('browser_debug');
-  $browser_debug->dump($var);
+  $browser_debug->dump($var, $label);
 }
-
-
-
