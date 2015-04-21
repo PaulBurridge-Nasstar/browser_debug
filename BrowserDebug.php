@@ -235,7 +235,7 @@ class BrowserDebug {
     $return = array();
     foreach ($this->settings['logs'] as $log => &$pos) {
       if (!file_exists($log)) {
-        $this->log('The file ' . $log . ' does not exist', 'Error');
+        $this->dump('The log file ' . $log . ' does not exist', 'Browser Debug Error');
         $return[basename($log)] = array();
         continue;
       }
