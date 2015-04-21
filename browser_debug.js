@@ -71,7 +71,6 @@ if (typeof console === "undefined") {
     function populateLogs(logs) {
       var $browser_debug_panel = $('#browser_debug_panel');
       var $browser_debug_button = $('#browser_debug_button');
-      
       // Create panels and buttons for logs and populate panels.
       $.each(logs, function (logName, logData) {
         var safeLogName = logName.replace(/\W/g, '_');
@@ -85,7 +84,9 @@ if (typeof console === "undefined") {
         }
         // Panel contents.
         $.each(logData, function(index, text) {
-          $panel.append($('<pre></pre>').text(text));
+          var $pre = $('<pre></pre>').text(text);
+          $pre.html($pre.html().replace(/ /g, "&nbsp;"));
+          $panel.append($pre);
         });
         // Button.
         if($('#browser_debug_button_' + safeLogName).length === 0) {
