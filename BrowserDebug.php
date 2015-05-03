@@ -19,7 +19,9 @@ class BrowserDebug {
   private $stream;
   private $cloner;
   private $dumper;
-
+  private $dumpFile;
+  private $url;
+  private $disabled = FALSE;
   /**
    * Object constructor.
    */
@@ -27,8 +29,28 @@ class BrowserDebug {
     $this->stream = fopen('php://memory', 'r+');
     $this->cloner = new VarCloner();
     $this->dumper = new HtmlDumper($this->stream);
-    $this->getSettings();
+    $this->dumpFile = '/tmp/browser_debug_dump_' . session_id() . '.tmp';
+    $this->loadSettings();
     $this->updateLogPositions();
+    $this->url = $_GET['q'];
+    if ($this->url === 'browser-debug/json') {
+      $this->disabled = TRUE;
+    }
+    else {
+      $line = str_repeat('-', 40);
+      $line = substr_replace($line, ' ' . $this->url . ' ', 4, 0);
+      $this->dump($line);
+    }
+  }
+
+  /**
+   * Get settings.
+   *
+   * @return array
+   *   Settings.
+   */
+  public function getSettings() {
+    return $this->settings;
   }
 
   /**
@@ -60,6 +82,9 @@ class BrowserDebug {
    *   Optional label.
    */
   public function dump($var, $label = '') {
+    if ($this->disabled) {
+      return;
+    }
     if (!empty($label)) {
       $var = array($label => $var);
     }
@@ -81,7 +106,7 @@ class BrowserDebug {
   /**
    * Get settings from Drupal variable and update as necessary.
    */
-  private function getSettings() {
+  private function loadSettings() {
     $logs = variable_get('browser_debug_logs', '');
     if (empty($logs)) {
       $logs = array();
@@ -98,7 +123,6 @@ class BrowserDebug {
     $settings = array_replace_recursive($default, $settings);
     // Remove extra.
     $settings['logs'] = array_intersect_key($settings['logs'], $logs);
-    // $this->log(print_r($settings, TRUE), 'settings (get)');
     $this->settings = $settings;
   }
 
@@ -117,20 +141,18 @@ class BrowserDebug {
    *   Array containg all data gathered.
    */
   public function getAllData() {
-    $this->dump(array(
-      'session' => $this->getSession(),
-      'cookie' => $_COOKIE,
-      'server' => $_SERVER,
-      'request' => $_REQUEST,
-    ));
     $data = array(
       'logs' => array_merge($this->getWatchdogLog(), $this->getLogs()),
-      'html' => file_get_contents(drupal_get_path('module', 'browser_debug') . '/browser_debug.html'),
     );
     $this->saveSettings();
-    // Add log, done as last step to enable internal logging until the last
-    // moment.
-    $data['dump'] = $this->getDump();
+
+    if (file_exists($this->dumpFile)) {
+      $data['dump'] = file_get_contents($this->dumpFile);
+      unlink($this->dumpFile);
+    }
+    else {
+      $data['dump'] = '';
+    }
     return $data;
   }
 
@@ -251,6 +273,22 @@ class BrowserDebug {
       $pos = $new_pos;
     }
     return $return;
+  }
+
+  /**
+   * Save dump to file after adding session data.
+   */
+  public function saveDump() {
+    if ($this->disabled) {
+      return;
+    }
+    $this->dump(array(
+      'session' => $this->getSession(),
+      'cookie' => $_COOKIE,
+      'server' => $_SERVER,
+      'request' => $_REQUEST,
+    ));
+    file_put_contents($this->dumpFile, $this->getDump(), FILE_APPEND);
   }
 
 }

@@ -11,6 +11,28 @@
 include_once '/usr/local/include/composer/vendor/autoload.php';
 
 /**
+ * Implements hook_menu().
+ */
+function browser_debug_menu() {
+  $items = array();
+  $items['browser-debug/json'] = array(
+    'page callback' => '_browser_debug_ajax_request',
+    'access callback' => TRUE,
+  );
+  return $items;
+}
+
+/**
+ * Handle inbound ajax request.
+ */
+function _browser_debug_ajax_request() {
+  $browser_debug = &drupal_static('browser_debug');
+  $data = $browser_debug->getAllData();
+  drupal_json_output($data);
+  drupal_exit();
+}
+
+/**
  * Implements hook_boot().
  *
  * Gather log positions.
@@ -24,13 +46,21 @@ function browser_debug_boot() {
 }
 
 /**
+ * Impliments hook_exit().
+ */
+function browser_debug_exit() {
+  $browser_debug = &drupal_static('browser_debug');
+  $browser_debug->saveDump();
+}
+
+/**
  * Implements hook_ajax_render_alter().
  *
  * Add our own completion command to trigger client side actions.
  */
 function browser_debug_ajax_render_alter(&$commands) {
   $browser_debug = &drupal_static('browser_debug');
-  $commands[] = array('command' => 'browserDebugAjaxComplete', 'arguments' => $browser_debug->getAllData());
+  $commands[] = array('command' => 'browserDebugAjaxComplete');
 }
 
 /**
@@ -44,8 +74,10 @@ function browser_debug_js_alter() {
     if (current_path() !== 'system/ajax') {
       $done = TRUE;
       $browser_debug = &drupal_static('browser_debug');
-      $data = $browser_debug->getAllData();
-      drupal_add_js(array('browserDebug' => $data), 'setting');
+      // $data = $browser_debug->getAllData();
+      $settings = $browser_debug->getSettings();
+      $settings['html'] = file_get_contents(drupal_get_path('module', 'browser_debug') . '/browser_debug.html');
+      drupal_add_js(array('browserDebug' => $settings), 'setting');
     }
   }
 }
