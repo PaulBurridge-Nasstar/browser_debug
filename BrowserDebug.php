@@ -37,8 +37,9 @@ class BrowserDebug {
       $this->disabled = TRUE;
     }
     else {
-      $line = str_repeat('-', 40);
-      $line = substr_replace($line, ' ' . $this->url . ' ', 4, 0);
+      $line = '---- ' . $this->url . ' ';
+      $line .= str_repeat('-', 60 - (min(strlen($line), 60)));
+      
       $this->dump($line);
     }
   }
