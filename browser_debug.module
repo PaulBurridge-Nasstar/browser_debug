@@ -90,5 +90,7 @@ function browser_debug_js_alter() {
  */
 function d($var, $label = '') {
   $browser_debug = &drupal_static('browser_debug');
-  $browser_debug->dump($var, $label);
+  if (isset($browser_debug)) {
+    $browser_debug->dump($var, $label);
+  }
 }
